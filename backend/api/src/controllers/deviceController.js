@@ -350,9 +350,9 @@ export async function updateLocation(req, res, next) {
 
     // 1. Check if this is the newest location
     const { data: existingLocation } = await supabaseAdmin
-      .from('user_locations')
+      .from('driver_locations')
       .select('recorded_at')
-      .eq('user_id', userId)
+      .eq('driver_id', userId)
       .single();
 
     // 2. Only update user_locations if it's newer than the existing recorded_at
@@ -365,10 +365,10 @@ export async function updateLocation(req, res, next) {
 
     if (updateCurrentLocation) {
       const { error: upsertError } = await supabaseAdmin
-        .from('user_locations')
+        .from('driver_locations')
         .upsert(
           {
-            user_id:    userId,
+            driver_id:  userId,
             latitude:   lat,
             longitude:  lng,
             heading:    parsedHeading,
@@ -376,7 +376,7 @@ export async function updateLocation(req, res, next) {
             updated_at: new Date().toISOString(),
             recorded_at: recordedAt,
           },
-          { onConflict: 'user_id' }
+          { onConflict: 'driver_id' }
         );
 
       if (upsertError) {
@@ -387,9 +387,9 @@ export async function updateLocation(req, res, next) {
 
     // 3. Insert into history
     const { error: historyError } = await supabaseAdmin
-      .from('user_location_history')
+      .from('driver_location_history')
       .insert({
-        user_id:    userId,
+        driver_id:    userId,
         latitude:   lat,
         longitude:  lng,
         heading:    parsedHeading,
@@ -440,7 +440,7 @@ export async function syncLocations(req, res, next) {
       const recordedAt    = loc.recorded_at ? new Date(loc.recorded_at).toISOString() : new Date().toISOString();
 
       validLocations.push({
-        user_id: userId,
+        driver_id: userId,
         latitude: lat,
         longitude: lng,
         heading: parsedHeading,
@@ -462,10 +462,10 @@ export async function syncLocations(req, res, next) {
     // 1. Insert bulk history
     // Since we don't have ON CONFLICT DO NOTHING natively in standard supabase insert without .upsert
     // We will iterate or use upsert with onConflict.
-    // user_location_history_dedup_idx is unique on (user_id, recorded_at)
+    // driver_location_history_dedup_idx is unique on (driver_id, recorded_at)
     const { error: historyError } = await supabaseAdmin
-      .from('user_location_history')
-      .upsert(validLocations, { onConflict: 'user_id, recorded_at', ignoreDuplicates: true });
+      .from('driver_location_history')
+      .upsert(validLocations, { onConflict: 'driver_id, recorded_at', ignoreDuplicates: true });
 
     if (historyError) {
       logger.error('[DeviceController] Failed to sync location history:', historyError.message);
@@ -475,9 +475,9 @@ export async function syncLocations(req, res, next) {
     // 2. Update current location if newer
     if (newestLocation) {
       const { data: existingLocation } = await supabaseAdmin
-        .from('user_locations')
+        .from('driver_locations')
         .select('recorded_at')
-        .eq('user_id', userId)
+        .eq('driver_id', userId)
         .single();
 
       let updateCurrentLocation = true;
@@ -489,10 +489,10 @@ export async function syncLocations(req, res, next) {
 
       if (updateCurrentLocation) {
         const { error: upsertError } = await supabaseAdmin
-          .from('user_locations')
+          .from('driver_locations')
           .upsert(
             {
-              user_id:    userId,
+              driver_id:    userId,
               latitude:   newestLocation.latitude,
               longitude:  newestLocation.longitude,
               heading:    newestLocation.heading,
@@ -500,7 +500,7 @@ export async function syncLocations(req, res, next) {
               updated_at: new Date().toISOString(),
               recorded_at: newestLocation.recorded_at,
             },
-            { onConflict: 'user_id' }
+            { onConflict: 'driver_id' }
           );
 
         if (upsertError) {
