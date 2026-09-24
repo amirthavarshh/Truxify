@@ -20,7 +20,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS driver_location_history_dedup_idx ON public.dr
 ALTER TABLE public.driver_locations ADD COLUMN IF NOT EXISTS recorded_at TIMESTAMPTZ;
 
 -- 3. Update existing rows in driver_locations to have a recorded_at if it's missing
-UPDATE public.driver_locations SET recorded_at = created_at WHERE recorded_at IS NULL;
+UPDATE public.driver_locations SET recorded_at = NOW() WHERE recorded_at IS NULL;
 
 -- 4. Enable RLS for driver_location_history
 ALTER TABLE public.driver_location_history ENABLE ROW LEVEL SECURITY;
