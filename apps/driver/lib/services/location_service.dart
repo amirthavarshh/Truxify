@@ -193,6 +193,23 @@ class LocationService {
         return false;
       }
     };
+    _replayService.sendSyncLocations = 
+        ({required locations, required token}) async {
+      try {
+        final url = Uri.parse('$defaultApiBaseUrl/api/devices/locations/sync');
+        final response = await http.post(
+          url,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({'locations': locations}),
+        );
+        return response.statusCode >= 200 && response.statusCode < 300;
+      } catch (_) {
+        return false;
+      }
+    };
     _replayService.tokenProvider =
         () => Supabase.instance.client.auth.currentSession?.accessToken;
     _replayService.driverIdProvider =
